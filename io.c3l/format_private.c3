@@ -660,21 +660,6 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
         prec_padding = self.prec - (usz)(l + pl);
         if(prec_padding > 0) padding     -= prec_padding;
     }
-    if(formatting == FLOAT){
-        padding = self.width - (usz)(l + pl);
-        prec_padding = 0;
-        if(self.flags.zero_padding && self.flags.precision){
-            prec_padding = self.prec - (usz)(l + pl);
-            if(prec_padding > 0) padding     -= prec_padding;
-        }
-    }else{
-        padding = self.width - (usz)(l + pl);
-        prec_padding = 0;
-        if(self.flags.zero_padding && self.flags.precision){
-            prec_padding = self.prec - (usz)(l + pl);
-            if(prec_padding > 0) padding     -= prec_padding;
-        }
-    }
     dbg::eprintfn("%s[%d]«%s» pl == `%d'\n e2 == `%d'\n padding == %d\n l == `%d'\n"
                 " p == `%d'\n self.flags.precision == `%s'\n self.prec == `%d'\n prec_padding == `%d'",
         $$FILE, $$LINE, $$FUNC, pl, e2, padding, l, p, self.flags.precision, self.prec, prec_padding);
@@ -695,10 +680,11 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
         case FmtSign.ONLY_NEGS:
             if(is_neg) len += self.out('-')!;
         case FmtSign.BOTH:
-            if(is_neg) len += self.out(is_neg ? '-' : '+')!;
-            dbg::eprintfn("%s[%d]«%s» buf_array == `%s'\n e2 == `%d'\n padding == %d\n prec_padding == `%f'\n"
+            len += self.out(is_neg ? '-' : '+')!;
+            dbg::eprintfn("%s[%d]«%s» buf_array == `%s'\n padding == %d\n prec_padding == `%f'\n"
                         " p == `%d'\n self.flags.precision == `%s'\n self.prec == `%d'\n pl == `%d'",
-                $$FILE, $$LINE, $$FUNC, buf_array, e2, padding, prec_padding, p, self.flags.precision, self.prec, pl);
+                $$FILE, $$LINE, $$FUNC, buf_array, padding, prec_padding, p, self.flags.precision,
+                                                self.prec, pl);
         case FmtSign.SPACE_OR_MINUS:
             if(is_neg) len += self.out(is_neg ? '-' : ' ')!;
     } // switch(self.flags.sign) //

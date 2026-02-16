@@ -18,18 +18,18 @@ fn void main(String[] args){
     }
     double pi    = 3.141592265;
     double e     = 2.718281828;
-    long   width = 64;
-    long   prec  = 29;
+    long   width = 74;
+    long   prec  = 39;
     ArgHash named = arg::@make_map(*("pi" * any_make(&pi, $typeof(pi))), *("euler" * any_make(&e, $typeof(e))),
                                     *("width" * any_make(&width, $typeof(width))), *("prec" * any_make(&prec, $typeof(prec))));
-    String? s = fmt::format(" pi == {:@^+#64.29Le}\n pi == {0:*>+#{width}.{prec}Le}\n pi == {pi:*<+#{width}.{prec}e}\n pi == {pi:@^+#{width}.{prec}E}", pi, e, "fred", 30, 63, &named);
+    String? s = fmt::format(" pi == {:@^+#74.39Le}\n pi == {0:*>+#{width}.{prec}Le}\n pi == {pi:*<+#{width}.{prec}e}\n pi == {pi:@^+#{width}.{prec}E}", pi, e, "fred", 30, 63, &named);
     if(catch excuse = s){
         io::eprintfn("Error: could not format string: %s", excuse);
         libc::exit(-1);
     }else{
         io::printfn("%s", s);
     }
-    String? s0 = fmt::format(" pi == {:@^+#064.29Le}\n pi == {0:*>+#0{width}.{prec}Le}\n pi == {pi:*<+#0{width}.{prec}e}\n pi == {pi:@^+#0{width}.{prec}E}", pi, e, "fred", 30, 63, &named);
+    String? s0 = fmt::format(" pi == {:@^+#074.39Le}\n pi == {0:*>+#0{width}.{prec}Le}\n pi == {pi:*<+#0{width}.{prec}e}\n pi == {pi:@^+#0{width}.{prec}E}", pi, e, "fred", 30, 63, &named);
     if(catch excuse = s0){
         io::eprintfn("Error: could not format string: %s", excuse);
         libc::exit(-1);
