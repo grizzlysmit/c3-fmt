@@ -18,8 +18,8 @@ fn void main(String[] args){
     }
     double pi    = 3.141592265;
     double e     = 2.718281828;
-    long   width = 64;
-    long   prec  = 29;
+    long   width = 74;
+    long   prec  = 39;
     ArgHash named = arg::@make_map(*("pi" * any_make(&pi, $typeof(pi))), *("euler" * any_make(&e, $typeof(e))),
                                     *("width" * any_make(&width, $typeof(width))), *("prec" * any_make(&prec, $typeof(prec))));
     String? s = fmt::format(" pi == {:@^+#64.29Lf}\n pi == {0:*>+#{width}.{prec}Lf}\n pi == {pi:*<+#{width}.{prec}f}\n pi == {pi:@^+#{width}.{prec}F}", pi, e, "fred", 30, 63, &named);
