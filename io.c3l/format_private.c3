@@ -655,26 +655,29 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 	if(l > int.max - pl) return INTERNAL_BUFFER_EXCEEDED~;
 	usz len;
     usz padding = self.width - (usz)(l + pl);
-    usz prec_padding = 0;
+    isz prec_padding = 0;
     if(self.flags.zero_padding && self.flags.precision){
         prec_padding = self.prec - (usz)(l + pl);
-        padding     -= prec_padding;
+        if(prec_padding > 0) padding     -= prec_padding;
     }
     if(formatting == FLOAT){
         padding = self.width - (usz)(l + pl);
         prec_padding = 0;
         if(self.flags.zero_padding && self.flags.precision){
             prec_padding = self.prec - (usz)(l + pl);
-            padding     -= prec_padding;
+            if(prec_padding > 0) padding     -= prec_padding;
         }
     }else{
         padding = self.width - (usz)(l + pl);
         prec_padding = 0;
         if(self.flags.zero_padding && self.flags.precision){
             prec_padding = self.prec - (usz)(l + pl);
-            padding     -= prec_padding;
+            if(prec_padding > 0) padding     -= prec_padding;
         }
     }
+    dbg::eprintfn("%s[%d]«%s» pl == `%d'\n e2 == `%d'\n padding == %d\n l == `%d'\n"
+                " p == `%d'\n self.flags.precision == `%s'\n self.prec == `%d'\n prec_padding == `%d'",
+        $$FILE, $$LINE, $$FUNC, pl, e2, padding, l, p, self.flags.precision, self.prec, prec_padding);
     bool odd = false;
     switch(self.flags.alignment){
         case FmtAlignment.LEFT:
@@ -693,6 +696,9 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
             if(is_neg) len += self.out('-')!;
         case FmtSign.BOTH:
             if(is_neg) len += self.out(is_neg ? '-' : '+')!;
+            dbg::eprintfn("%s[%d]«%s» buf_array == `%s'\n e2 == `%d'\n padding == %d\n prec_padding == `%f'\n"
+                        " p == `%d'\n self.flags.precision == `%s'\n self.prec == `%d'\n pl == `%d'",
+                $$FILE, $$LINE, $$FUNC, buf_array, e2, padding, prec_padding, p, self.flags.precision, self.prec, pl);
         case FmtSign.SPACE_OR_MINUS:
             if(is_neg) len += self.out(is_neg ? '-' : ' ')!;
     } // switch(self.flags.sign) //
@@ -716,7 +722,7 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 			while(s > buf) *--s = '0';
 			len += self.out_chars(s[:math::min((isz)9, p)])!;
 		}
-		len += self.pad('0', p + 9, 9)!;
+		len += self.pad2('0', prec_padding)!;
 	}else{
 		if(z <= a) z = a + 1;
 		for(uint* d = a; d < z && p >= 0; d++){
@@ -731,7 +737,7 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 			len += self.out_chars(s[:math::min(buf + 9 - s, p)])!;
 			p -= buf + 9 - s;
 		}
-		len += self.pad('0', p + 18, 18)!;
+		len += self.pad2('0', prec_padding)!;
 		len += self.out_chars(estr[:ebuf - estr])!;
 	}
 
