@@ -93,8 +93,8 @@ macro usz? Fmter.printf(&self, String format, ...)
 	return self.vsprintf(format, args[..], named) @inline;
 }
 
-//                                   Normal spec       DateTime            Range (Array, Vector or Slice) //
-enum  FmtSpec : const inline char { REGULARSPEC = 0x0, DATETIMESPEC = 0x1, RANGESPEC = 0x2, }
+//                              Normal spec       DateTime            Range (Array, Vector or Slice) //
+const enum  FmtSpec : char { REGULARSPEC = 0x0, DATETIMESPEC = 0x1, RANGESPEC = 0x2, }
 
 struct Fmter
 {
@@ -113,19 +113,19 @@ struct Fmter
 	}
 }
 
-//                                                       '<'            '^'          '>'          //
-enum FmtAlignment : const inline char { NOPADDING = 0x0, LEFT = 0x1, CENTRE = 0x2, RIGHT = 0x3    }
+//                                                 '<'            '^'          '>'          //
+const enum FmtAlignment : char { NOPADDING = 0x0, LEFT = 0x1, CENTRE = 0x2, RIGHT = 0x3    }
 
-//                                        '-'             '_'          '0'        //
-enum FmtPadding   : const inline char { NOSPACES = 0x0, SPACES = 0x1, ZEROS = 0x2 }
+//                                '-'             '_'          '0'        //
+const enum FmtPadding   : char { NOSPACES = 0x0, SPACES = 0x1, ZEROS = 0x2 }
 
-//                                        '-'             '+'              ' '            //
-enum FmtSign      : const inline char { ONLY_NEGS = 0x0, BOTH = 0x1, SPACE_OR_MINUS = 0x2 }
+//                                '-'             '+'              ' '            //
+const enum FmtSign      : char { ONLY_NEGS = 0x0, BOTH = 0x1, SPACE_OR_MINUS = 0x2 }
 
 bitstruct FmtFlags : uint
 {
     FmtSpec      stype           : 0..1;
-	FmtPadding   padding         : 2..3;
+	FmtPadding   padding         : 2..3; // chrono only //
 	FmtAlignment alignment       : 4..5;
 	FmtSign      sign            : 6..7;
 	bool         alternate       : 8;
@@ -478,6 +478,8 @@ fn usz? Fmter.vsprintf(&self, String format, any[] anys, ArgHash named){
                     return POSITIONAL_ARGUMENTS_EXHUSTED_FORMAT_EXCEEDS_SUPPLY~;
                 }
                 arg = anys[variant_index++];
+                dbg::eprintfn("%s[%d]«%s» arg == `%s'\n variant_index == `%d'",
+                        $$FILE, $$LINE, $$FUNC, arg, variant_index);
             }else{
                 endptr  = null;
                 ZString chunk  = body.zstr_view();
@@ -514,6 +516,8 @@ fn usz? Fmter.vsprintf(&self, String format, any[] anys, ArgHash named){
                     return BODY_MUST_BE_AN_IDENIFIER_OR_NUMBER~;
                 }
             }
+            dbg::eprintfn("%s[%d]«%s» arg == `%s'\n variant_index == `%d'",
+                    $$FILE, $$LINE, $$FUNC, arg, variant_index);
         } // if(c == END || c == ':') // got the arg //
         dbg::eprintfn("%s[%d]«%s» format[i:format_len - i] == `%s'\n c == `%c'\n"
                                             " i == %d\n format_len == `%d'",
@@ -540,6 +544,11 @@ fn usz? Fmter.vsprintf(&self, String format, any[] anys, ArgHash named){
                         i++;
                         c = format[i];
                         self.flags.alignment = c.alignment_value();
+                        dbg::eprintfn("%s[%d]«%s» format[i:format_len - i] == `%s'\n c == `%c'\n"
+                                            " i == %d\n format_len == `%d'\n"
+                                            "self.flags.alignment == `%s'",
+                                    $$FILE, $$LINE, $$FUNC, format[i:format_len - i], c, i, format_len, 
+                                         self.flags.alignment);
                     }else if("<^>".contains_char(c)){
                         self.flags.alignment = c.alignment_value();
                         dbg::eprintfn("%s[%d]«%s» format[i:format_len - i] == `%s'\n c == `%c'\n"
@@ -783,8 +792,8 @@ fn usz? Fmter.vsprintf(&self, String format, any[] anys, ArgHash named){
                     if("<^>".contains_char(peek)){
                         self.fill = c;
                         i++;
-                        self.flags.alignment = c.alignment_value();
                         c = format[i];
+                        self.flags.alignment = c.alignment_value();
                         dbg::eprintfn("%s[%d]«%s» format[i:format_len - i] == `%s'\n c == `%c'\n i == %d\n"
                                 " format_len == `%d'\n self.fill == `%c'\n self.flags.alignment == `%s'",
                                 $$FILE, $$LINE, $$FUNC, format[i:format_len - i], c, i, format_len, 
@@ -995,6 +1004,9 @@ fn usz? Fmter.vsprintf(&self, String format, any[] anys, ArgHash named){
 				self.flags.uppercase = true;
 				nextcase;
 			case 'a':
+                dbg::eprintfn("%s[%d]«%s» format[i:format_len - i] == `%s'\n c == `%c'\n"
+                                " i == %d\n format_len == `%d'",
+                        $$FILE, $$LINE, $$FUNC, format[i:format_len - i], c, i, format_len);
 				total_len += @wrap_bad(self, self.atoa(float_from_any(arg)))!;
                 i++;
                 if(i >= format_len) return ERROR_MISSING_CLOSING_MAIN_BRACE~;

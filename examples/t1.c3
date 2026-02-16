@@ -7,31 +7,32 @@ import my::collections::arg;
 import std::collections::map;
 import std::collections::list;
 import my::debug::dbg;
-import array_utils::uts;
-import string_utils::su;
+
+alias ArgHash     = map::HashMap{String, any*};
+alias ArgList     = List {any*};
+alias ArgMapEntry = Entry {String, any*};
 
 fn void main(String[] args){
     if(args[1..].contains("--debug")){
         dbg::debugging = true;
     }
-    //dbg::eprintfn("%s", args[1..]);
     double pi    = 3.141592265;
     double e     = 2.718281828;
     long   width = 64;
     long   prec  = 29;
     ArgHash named = arg::@make_map(*("pi" * any_make(&pi, $typeof(pi))), *("euler" * any_make(&e, $typeof(e))),
                                     *("width" * any_make(&width, $typeof(width))), *("prec" * any_make(&prec, $typeof(prec))));
-    String? s = fmt::format("pi == {:@^+#030.59La}\n e == {euler:*>+#0{width}.{prec}LF}\n name == {2:@^{3}.{4}}\n pi == {pi:*>+#0.{prec}E}\n pi == {pi:@^+#{width}.{prec}g}", pi, e, "fred", 30, 63, &named);
+    String? s = fmt::format("pi == {0:@^+#30.59La}\n e == {euler:*>+#0{width}.{prec}LF}\n name == {2:@^{3}.{4}}\n pi == {pi:*>+#0.{prec}E}\n pi == {pi:@^+#{width}.{prec}g}", pi, e, "fred", 30, 63, &named);
     if(catch excuse = s){
-        io::printfn("Error: could not format string: %s", excuse);
+        io::eprintfn("Error: could not format string: %s", excuse);
         libc::exit(-1);
     }else{
         io::printfn("%s", s);
     }
-    /* this gives an error as the last spec is missing it's closing brace //
+    /* this give an error as the last spec is missing it's closing brace //
     String? s2 = fmt::format("pi == {:@^+#030.59La}\n e == {e:*>+#0{width}.{prec}LF}\n name == {2:@^{3}.{4}}\n pi == {pi:!>+#0.{prec}E", pi, e, "fred", 30, 63, named);
     if(catch excuse = s2){
-        io::printfn("Error: could not format string %s", excuse);
+        io::eprintfn("Error: could not format string %s", excuse);
         libc::exit(-1);
     }else{
         io::printfn("%s", s2);
@@ -41,7 +42,7 @@ fn void main(String[] args){
     libc::Tm     tm = *libc::localtime(&ts);
     String? s3 = fmt::format(" {:@^{2}.{3} %A the %e of %B %Y, %F %T }\n {:*>{2}.{3} %Y-%m-%d %H:%M:%S %A the %e of %B %Y }", ts, tm, width, prec, &named);
     if(catch excuse3 = s3){
-        io::printfn("Error: could not format string: %s", excuse3);
+        io::eprintfn("Error: could not format string: %s", excuse3);
         libc::exit(-1);
     }else{
         io::printfn("%s", s3);
@@ -51,7 +52,7 @@ fn void main(String[] args){
     fmt::gdebug = true;
     String? s4       = fmt::format("{:s:^{width}.{prec}c}\n{0:ns:^{width}.{prec}Lc}\n{0:n?s:^{width}.{prec}c}\n{:?s:{width}.{prec}d}", disguised, ints, named);
     if(catch excuse4 = s4){
-        io::printfn("Error: could not format string: %s", excuse4);
+        io::eprintfn("Error: could not format string: %s", excuse4);
         libc::exit(-1);
     }else{
         io::printfn("%s", s4);
@@ -59,9 +60,19 @@ fn void main(String[] args){
     fmt::gdebug = false;
     String? s5       = fmt::format("{:s:^1.1c}\n{0:ns:^1.1Lc}\n{0:n?s:^1.1c}\n{:?s:1.1d}", disguised, ints, named);
     if(catch excuse5 = s5){
-        io::printfn("Error: could not format string: %s", excuse5);
+        io::eprintfn("Error: could not format string: %s", excuse5);
         libc::exit(-1);
     }else{
         io::printfn("%s", s5);
     }
+    long life_the_universe = 42;
+    String? s6 = fmt::format("{life_the_universe:@^+#0{}.{}d}", 50, 20,
+                        "life_the_universe" * any_make(&life_the_universe, $typeof(life_the_universe)));
+    if(catch excuse6 = s6){
+        io::printfn("Error: could not format string: %s", excuse6);
+        libc::exit(-1);
+    }else{
+        io::printfn("%s", s6);
+    }
 }
+

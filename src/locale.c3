@@ -60,7 +60,7 @@ macro _nl_item_index(item)	     =>	((CInt) (item) & 0xffff);
 const NlItem ZERO                = 0;
 
 /* Enumeration of locale items that can be queried with `nl_langinfo'.  */
-enum TimeConsts : const inline NlItem {
+const enum TimeConsts : inline NlItem {
   /* LC_TIME category: date and time formatting.  */
 
   /* Abbreviated days of the week. */

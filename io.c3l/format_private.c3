@@ -205,7 +205,9 @@ fn usz? Fmter.pad2(&self, char c, isz delta) @inline {
 
 fn char* fmt_u(uint128 x, char* s){
 	for (; x > ulong.max; x /= 10) *--s = '0' + (char)(x % 10);
+    dbg::eprintfn("%s[%d]«%s» x == `%d'\n s == `%s'", $$FILE, $$LINE, $$FUNC, x, (ZString)s);
 	for (ulong y = (ulong)x; y; y /= 10) *--s = '0' + (char)(y % 10);
+    dbg::eprintfn("%s[%d]«%s» s == `%s'", $$FILE, $$LINE, $$FUNC, (ZString)s);
 	return s;
 } // fn char* fmt_u(uint128 x, char* s) //
 
@@ -237,8 +239,12 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 		is_neg = true;
 		y = -y;
 	}
+    dbg::eprintfn("%s[%d]«%s» is_neg == `%s'\n self.flags.sign == `%s'",
+                            $$FILE, $$LINE, $$FUNC, is_neg, self.flags.sign);
 	isz pl = is_neg || (self.flags.sign == FmtSign.BOTH) ? 1 : 0
                             || (self.flags.sign == FmtSign.SPACE_OR_MINUS) ? 1 : 0;
+    dbg::eprintfn("%s[%d]«%s» is_neg == `%s'\n self.flags.sign == `%s'\n pl == `%d'",
+                            $$FILE, $$LINE, $$FUNC, is_neg, self.flags.sign, pl);
 	// sprint inf/nan
 	if(!math::is_finite(y)){
         usz padding = self.width - (3 + pl);
@@ -313,9 +319,20 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 	char* buf = &buf_array;
 	isz p = self.flags.precision ? self.prec : -1;
 	if(formatting == HEX){
+        dbg::eprintfn("%s[%d]«%s» buf_array == `%s'\n e2 == `%d'\n"
+                        " ebuf0 == %d\n y == `%f'\n p == `%d'\n self.flags.precision == `%s'\n self.prec == `%d'",
+                $$FILE, $$LINE, $$FUNC, buf_array, e2, ebuf0, y, p, self.flags.precision, self.prec);
 		double round = 8.0;
+        dbg::eprintfn("%s[%d]«%s» buf_array == `%s'\n e2 == `%d'\n ebuf0 == %d\n y == `%f'\n p == `%d'\n"
+                        " self.flags.precision == `%s'\n self.prec == `%d'\n round == `%f'\n pl == `%d'",
+                            $$FILE, $$LINE, $$FUNC, buf_array, e2, ebuf0, y, p, self.flags.precision,
+                                    self.prec, round, pl);
 		// 0x / 0X
 		pl += 2;
+        dbg::eprintfn("%s[%d]«%s» buf_array == `%s'\n e2 == `%d'\n ebuf0 == %d\n y == `%f'\n p == `%d'\n"
+                        " self.flags.precision == `%s'\n self.prec == `%d'\n round == `%f'\n pl == `%d'",
+                            $$FILE, $$LINE, $$FUNC, buf_array, e2, ebuf0, y, p, self.flags.precision,
+                                    self.prec, round, pl);
 		if(p > 0 && p < math::DOUBLE_MANT_DIG / 4 - 1){
 			int re = math::DOUBLE_MANT_DIG / 4 - 1 - (int)p;
 			round *= 1 << (math::DOUBLE_MANT_DIG % 4);
@@ -354,125 +371,141 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 				? p + 2 + explen
 				: outlen + explen;
 		//if(!self.flags.left && !self.flags.zeropad) len += self.pad(' ', self.width, pl + l)!;
-        usz padding = self.width - (outlen + explen + 2 * (usz)self.flags.alternate + pl);
+        usz padding = self.width - (outlen + explen + 2 * (usz)self.flags.alternate);
+        usz prec_padding = 0;
+        if(self.flags.zero_padding && self.flags.precision){
+            prec_padding = self.prec - (outlen + explen + 2 * (usz)self.flags.alternate);
+            padding -= prec_padding;
+        }
+        dbg::eprintfn("%s[%d]«%s» pl == `%d'", $$FILE, $$LINE, $$FUNC, pl);
+        dbg::eprintfn("%s[%d]«%s» buf_array == `%s'\n e2 == `%d'\n ebuf == %d\n y == `%f'\n"
+                        " p == `%d'\n self.flags.precision == `%s'\n self.prec == `%d'\n round == `%f'",
+                $$FILE, $$LINE, $$FUNC, buf_array, e2, ebuf, y, p, self.flags.precision, self.prec, round);
+        dbg::eprintfn("%s[%d]«%s» buf_array == `%s'\n e2 == `%d'\n estr == %d\n y == `%f'\n"
+                        " p == `%d'\n self.flags.precision == `%s'\n self.prec == `%d'\n round == `%f'",
+                $$FILE, $$LINE, $$FUNC, buf_array, e2, estr, y, p, self.flags.precision, self.prec, round);
+        dbg::eprintfn("%s[%d]«%s» self.flags.alignment == `%s'\n self.flags.sign == `%s'\n"
+                         " self.flags.alternate == %s\n self.flags.padding == `%s'\n padding == `%s'",
+                $$FILE, $$LINE, $$FUNC, self.flags.alignment, self.flags.sign, self.flags.alternate,
+                    self.flags.padding, padding);
         switch(self.flags.alignment){
             case FmtAlignment.LEFT:
                 switch(self.flags.sign){
                     case FmtSign.ONLY_NEGS:
                         if(is_neg) len += self.out('-')!;
                         if(self.flags.alternate) len += self.out_chars(self.flags.uppercase ? "0X" : "0x")!;
-                        if(self.flags.padding == FmtPadding.ZEROS){
-                            len += self.pad2('0', padding)!;
+                        if(self.flags.zero_padding){
+                            len += self.pad2('0', prec_padding)!;
                         }
                         len += self.out_chars(buf[:outlen])!;
-                        len += self.pad('0', l - outlen - explen, 0)!;
+                        //len += self.pad('0', l - outlen - explen, 0)!;
                         len += self.out_chars(estr[:explen])!;
                     case FmtSign.BOTH:
                         if(is_neg) len += self.out(is_neg ? '-' : '+')!;
                         if(self.flags.alternate) len += self.out_chars(self.flags.uppercase ? "0X" : "0x")!;
                         //if(self.flags.left) len += self.pad('0', self.width, pl + l)!;
-                        if(self.flags.padding == FmtPadding.ZEROS){
-                            len += self.pad2('0', padding)!;
+                        if(self.flags.zero_padding){
+                            len += self.pad2('0', prec_padding)!;
                         }
                         len += self.out_chars(buf[:outlen])!;
-                        len += self.pad('0', l - outlen - explen, 0)!;
+                        //len += self.pad('0', l - outlen - explen, 0)!;
                         len += self.out_chars(estr[:explen])!;
                     case FmtSign.SPACE_OR_MINUS:
                         if(is_neg) len += self.out(is_neg ? '-' : ' ')!;
                         if(self.flags.alternate) len += self.out_chars(self.flags.uppercase ? "0X" : "0x")!;
                         //if(self.flags.left) len += self.pad('0', self.width, pl + l)!;
-                        if(self.flags.padding == FmtPadding.ZEROS){
-                            len += self.pad2('0', padding)!;
+                        if(self.flags.zero_padding){
+                            len += self.pad2('0', prec_padding)!;
                         }
                         len += self.out_chars(buf[:outlen])!;
-                        len += self.pad('0', l - outlen - explen, 0)!;
+                        //len += self.pad('0', l - outlen - explen, 0)!;
                         len += self.out_chars(estr[:explen])!;
                 }
-                len += self.pad(' ', self.width, pl + l)!;
+                len += self.pad2(self.fill, padding)!;
             case FmtAlignment.CENTRE:
-                len += self.pad2(' ', padding)!;
+                dbg::eprintfn("%s[%d]«%s» buf_array == `%s'\n e2 == `%d'\n ebuf0 == %d\n y == `%f'\n"
+                        " p == `%d'\n self.flags.precision == `%s'\n self.prec == `%d'\n round == `%f'",
+                $$FILE, $$LINE, $$FUNC, buf_array, e2, ebuf0, y, p, self.flags.precision, self.prec, round);
+                //len += self.pad2(self.fill, padding)!;
                 if(padding > 0){
                     bool odd = (bool)(padding & 0x0000000000000001);
                     padding /= 2;
                     dbg::eprintfn("%s[%d]«%s» padding == `%s'\n odd == `%s'",
                                                             $$FILE, $$LINE, $$FUNC, padding, odd);
-                    if(self.flags.padding == FmtPadding.SPACES){
-                        len += self.pad2(self.fill, padding + (usz)odd)!;
-                    }
+                    len += self.pad2(self.fill, padding + (usz)odd)!;
                     switch(self.flags.sign){
                         case FmtSign.ONLY_NEGS:
                             if(is_neg) len += self.out('-')!;
                             if(self.flags.alternate){
                                 len += self.out_chars(self.flags.uppercase ? "0X" : "0x")!;
                             }
-                            if(self.flags.padding == FmtPadding.ZEROS){
-                                len += self.pad('0', self.width, pl + l)!;
+                            if(self.flags.zero_padding){
+                                len += self.pad2('0', prec_padding)!;
                             }
                             len += self.out_chars(buf[:outlen])!;
-                            len += self.pad('0', l - outlen - explen, 0)!;
+                            //len += self.pad('0', l - outlen - explen, 0)!;
                             len += self.out_chars(estr[:explen])!;
+                            //len += self.pad(self.fill, self.width, pl + l)!;
+                            len += self.pad2(self.fill, padding)!;
                         case FmtSign.BOTH:
                             if(is_neg) len += self.out(is_neg ? '-' : '+')!;
                             if(self.flags.alternate){
                                 len += self.out_chars(self.flags.uppercase ? "0X" : "0x")!;
                             }
                             //if(self.flags.left) len += self.pad('0', self.width, pl + l)!;
-                            if(self.flags.padding == FmtPadding.ZEROS){
-                                len += self.pad('0', self.width, pl + l)!;
+                            if(self.flags.zero_padding){
+                                len += self.pad2('0', prec_padding)!;
                             }
                             len += self.out_chars(buf[:outlen])!;
-                            len += self.pad('0', l - outlen - explen, 0)!;
+                            //len += self.pad('0', l - outlen - explen, 0)!;
                             len += self.out_chars(estr[:explen])!;
+                            len += self.pad2(self.fill, padding)!;
                         case FmtSign.SPACE_OR_MINUS:
                             if(is_neg) len += self.out(is_neg ? '-' : ' ')!;
                             if(self.flags.alternate){
                                 len += self.out_chars(self.flags.uppercase ? "0X" : "0x")!;
                             }
-                            if(self.flags.padding == FmtPadding.ZEROS){
-                                len += self.pad('0', self.width, pl + l)!;
+                            if(self.flags.zero_padding){
+                                len += self.pad2('0', prec_padding)!;
                             }
                             len += self.out_chars(buf[:outlen])!;
-                            len += self.pad('0', l - outlen - explen, 0)!;
+                            //len += self.pad('0', l - outlen - explen, 0)!;
                             len += self.out_chars(estr[:explen])!;
+                            len += self.pad2(self.fill, padding)!;
                     } // switch(self.flags.sign) //
                     if(self.flags.padding == FmtPadding.SPACES){
                         len += self.pad2(self.fill, padding)!;
                     }
                 } // if(padding > 0) //
             case FmtAlignment.RIGHT:
+                len += self.pad2(self.fill, padding)!;
                 switch(self.flags.sign){
                     case FmtSign.ONLY_NEGS:
                         if(is_neg) len += self.out('-')!;
                         if(self.flags.alternate) len += self.out_chars(self.flags.uppercase ? "0X" : "0x")!;
-                        if(self.flags.padding == FmtPadding.ZEROS){
-                            len += self.pad('0', self.width, pl + l)!;
+                        if(self.flags.zero_padding){
+                            len += self.pad2('0', prec_padding)!;
                         }
                         len += self.out_chars(buf[:outlen])!;
-                        len += self.pad('0', l - outlen - explen, 0)!;
                         len += self.out_chars(estr[:explen])!;
                     case FmtSign.BOTH:
                         if(is_neg) len += self.out(is_neg ? '-' : '+')!;
                         if(self.flags.alternate) len += self.out_chars(self.flags.uppercase ? "0X" : "0x")!;
                         //if(self.flags.left) len += self.pad('0', self.width, pl + l)!;
-                        if(self.flags.padding == FmtPadding.ZEROS){
-                            len += self.pad('0', self.width, pl + l)!;
+                        if(self.flags.zero_padding){
+                            len += self.pad2('0', prec_padding)!;
                         }
                         len += self.out_chars(buf[:outlen])!;
-                        len += self.pad('0', l - outlen - explen, 0)!;
                         len += self.out_chars(estr[:explen])!;
                     case FmtSign.SPACE_OR_MINUS:
                         if(is_neg) len += self.out(is_neg ? '-' : ' ')!;
                         if(self.flags.alternate) len += self.out_chars(self.flags.uppercase ? "0X" : "0x")!;
-                        if(self.flags.padding == FmtPadding.ZEROS){
-                            len += self.pad('0', self.width, pl + l)!;
+                        if(self.flags.zero_padding){
+                            len += self.pad2('0', prec_padding)!;
                         }
                         len += self.out_chars(buf[:outlen])!;
-                        len += self.pad('0', l - outlen - explen, 0)!;
                         len += self.out_chars(estr[:explen])!;
                 } // switch(self.flags.sign) //
-                if(self.flags.padding = FmtPadding.SPACES){
-                    len += self.pad2(self.fill, padding)!;
-                }
         } // switch(self.flags.alignment) //
 		//if (self.flags.left) len += self.pad(' ', self.width, pl + l)!;
 		return len;
@@ -543,7 +576,7 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 		uint* d = r + 1 + ((j + 9 * math::DOUBLE_MAX_EXP) / 9 - math::DOUBLE_MAX_EXP);
 		j += 9 * math::DOUBLE_MAX_EXP;
 		j %= 9;
-		int i;
+		uint i;
 		for (i = 10, j++; j < 9; i *= 10, j++);
 		x = *d % i;
 		// Are there any significant digits past j?
@@ -593,7 +626,7 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 		if(!self.flags.alternate){
 			// Count trailing zeros in last place
 			if(z > a && z[-1]){
-				for (int i = 10, j = 0; z[-1] % i == 0; i *= 10, j++);
+				for (uint i = 10, j = 0; z[-1] % i == 0; i *= 10, j++);
 			}else{
 				j = 9;
 			}
@@ -621,7 +654,27 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 	}
 	if(l > int.max - pl) return INTERNAL_BUFFER_EXCEEDED~;
 	usz len;
-    usz padding = self.width - (l + pl);
+    usz padding = self.width - (usz)(l + pl);
+    usz prec_padding = 0;
+    if(self.flags.zero_padding && self.flags.precision){
+        prec_padding = self.prec - (usz)(l + pl);
+        padding     -= prec_padding;
+    }
+    if(formatting == FLOAT){
+        padding = self.width - (usz)(l + pl);
+        prec_padding = 0;
+        if(self.flags.zero_padding && self.flags.precision){
+            prec_padding = self.prec - (usz)(l + pl);
+            padding     -= prec_padding;
+        }
+    }else{
+        padding = self.width - (usz)(l + pl);
+        prec_padding = 0;
+        if(self.flags.zero_padding && self.flags.precision){
+            prec_padding = self.prec - (usz)(l + pl);
+            padding     -= prec_padding;
+        }
+    }
     bool odd = false;
     switch(self.flags.alignment){
         case FmtAlignment.LEFT:
@@ -630,14 +683,10 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
             if(padding > 0){
                 odd = (bool)(padding & 0x0000000000000001);
                 padding /= 2;
-                if(self.flags.padding == FmtPadding.SPACES){
-                    len += self.pad2(self.fill, padding + (usz)odd)!;
-                }
+                len += self.pad2(self.fill, padding + (usz)odd)!;
             }
         case FmtAlignment.RIGHT:
-            if(self.flags.padding == FmtPadding.SPACES){
-                len += self.pad2(self.fill, padding)!;
-            }
+            len += self.pad2(self.fill, padding)!;
     } // switch(self.flags.alignment) //
     switch(self.flags.sign){
         case FmtSign.ONLY_NEGS:
@@ -647,9 +696,9 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
         case FmtSign.SPACE_OR_MINUS:
             if(is_neg) len += self.out(is_neg ? '-' : ' ')!;
     } // switch(self.flags.sign) //
-	if(self.flags.padding == FmtPadding.ZEROS) len += self.pad('0', self.width, pl + l)!;
+	if(self.flags.zero_padding) len += self.pad2('0', prec_padding)!;
 	if(formatting == FLOAT){
-		if (a > r) a = r;
+		if(a > r) a = r;
 		uint* d = a;
 		for(; d <= r; d++){
 			char* s = fmt_u(*d, buf + 9);
@@ -661,7 +710,7 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 			}
 			len += self.out_chars(s[:buf + 9 - s])!;
 		}
-		if(p || self.flags.alternate) len += self.out('.')!;
+		if(p || self.flags.alternate) len += self.out(radix)!;
 		for(; d < z && p > 0; d++, p -= 9){
 			char* s = fmt_u(*d, buf + 9);
 			while(s > buf) *--s = '0';
@@ -677,7 +726,7 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 				while(s > buf) (--s)[0] = '0';
 			}else{
 				len += self.out(s++[0])!;
-				if(p > 0 || self.flags.alternate) len += self.out('.')!;
+				if(p > 0 || self.flags.alternate) len += self.out(radix)!;
 			}
 			len += self.out_chars(s[:math::min(buf + 9 - s, p)])!;
 			p -= buf + 9 - s;
@@ -688,13 +737,9 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 
     switch(self.flags.alignment){
         case FmtAlignment.LEFT:
-            if(self.flags.padding == FmtPadding.SPACES){
-                len = len += self.pad2(self.fill, padding)!;
-            }
+            len = len += self.pad2(self.fill, padding)!;
         case FmtAlignment.CENTRE:
-            if(self.flags.padding == FmtPadding.SPACES){
-                len = len += self.pad2(self.fill, padding)!;
-            }
+            len = len += self.pad2(self.fill, padding)!;
         case FmtAlignment.RIGHT:
     }
 
@@ -991,9 +1036,9 @@ fn usz? Fmter.out_reverse(&self, char[] buf) @private
 	usz len = buf.len;
     isz padding = self.width - len;
 	// pad spaces up to given width
-	if(self.flags.sign == FmtPadding.SPACES && self.flags.alignment == FmtAlignment.RIGHT){
+	if(self.flags.padding == FmtPadding.SPACES && self.flags.alignment == FmtAlignment.RIGHT){
 		n += self.pad(' ', self.width, len)!;
-	}else if(self.flags.sign == FmtPadding.SPACES && self.flags.alignment == FmtAlignment.CENTRE){
+	}else if(self.flags.padding == FmtPadding.SPACES && self.flags.alignment == FmtAlignment.CENTRE){
         if(padding > 0){
             bool odd = (bool)(padding & 0x0000000000000001);
             padding /= 2;
@@ -1129,17 +1174,20 @@ fn long? String.get_width_or_precision(self, char* ch, usz* sp, any[] args, usz*
     //if(*sp >= len) return 0; // TODO: review this //
     if(*ch == '.'){
         if(getting_width) return 0;
-        *ch = self[++(*sp)];
+        (*sp)++;
         if(*sp >= len) return ERROR_SPEC_DIED_TOO_SOON_COULD_NOT_GET_PRECISION~;
+        *ch = self[*sp];
     }
     //*
     if(*ch != BEGIN && !ascii::is_digit(*ch) && *sp < len){
-        *ch = self[++(*sp)]; // skip //
+        (*sp)++;
         if(*sp >= len) return ERROR_MISSING_OPENING_BRACE_IN_WIDTH_OR_PRECISION~;
+        *ch = self[*sp]; // skip //
     }
     if(!chrono && getting_width && *ch == '0' && *sp < len){
-        *ch = self[++(*sp)]; // skip //
+        (*sp)++;
         if(*sp >= len) return ERROR_MISSING_OPENING_BRACE_IN_WIDTH_OR_PRECISION~;
+        *ch = self[*sp]; // skip //
     }
     // */
     dbg::eprintfn("%s[%d]«%s» self[*sp:len - *sp] == `%s'\n *ch == `%c'\n"
@@ -1147,22 +1195,26 @@ fn long? String.get_width_or_precision(self, char* ch, usz* sp, any[] args, usz*
                                         $$FILE, $$LINE, $$FUNC, self[*sp:len - *sp],
                                                         *ch, *sp, len, getting_width, chrono);
     if(*ch == BEGIN){
-        *ch = self[++(*sp)]; // skip BEGIN //
+        (*sp)++;
         if(*sp >= len) return ERROR_MISSING_CLOSING_BRACE_IN_WIDTH_OR_PRECISION~;
+        *ch = self[*sp]; // skip BEGIN //
         if(*ch == BEGIN) return ERROR_NESTING_LEVEL_OF_BRACES_TOO_DEEP_IN_WIDTH_OR_PRECISION_SEE_DOCS~;
         dbg::eprintfn("%s[%d]«%s» self[*sp:len - *sp] == `%s'\n *ch == `%c'\n"
                     " sp == %d\n len == `%d'\n getting_width == `%s'\n chrono == `%s'",
                                         $$FILE, $$LINE, $$FUNC, self[*sp:len - *sp],
                                                         *ch, *sp, len, getting_width, chrono);
         while(*sp < len && *ch != END){
+            (*sp)++;
             chunk.append(*ch);
-            *ch = self[++(*sp)];
             if(*sp >= len) return ERROR_MISSING_CLOSING_BRACE_IN_WIDTH_OR_PRECISION~;
+            *ch = self[*sp];
             if(*sp >= len && *ch != END) return ERROR_MISSING_CLOSING_BRACE_IN_WIDTH_OR_PRECISION~;
         }
         if(*ch != END) return ERROR_MISSING_CLOSING_BRACE_IN_WIDTH_OR_PRECISION~;
         if(*sp < len){
-            *ch = self[++(*sp)];  // skip closing brace //
+            (*sp)++;
+            if(*sp >= len) return ERROR_MISSING_CLOSING_BRACE_IN_WIDTH_OR_PRECISION~;
+            *ch = self[*sp];  // skip closing brace //
         }
         ZString chnk = chunk.zstr_view();
         dbg::eprintfn("%s[%d]«%s» self[*sp:len - *sp] == `%s'\n *ch == `%c'\n"
@@ -1211,7 +1263,8 @@ fn long? String.get_width_or_precision(self, char* ch, usz* sp, any[] args, usz*
                             " sp == %d\n len == `%d'\n getting_width == `%s'\n chrono == `%s'\n i == `%d'",
                                                     $$FILE, $$LINE, $$FUNC, self[*sp:len - *sp],
                                                                 *ch, *sp, len, getting_width, chrono, i);
-                //*ch = self[++(*sp)];
+                //(*sp)++;
+                //*ch = self[*sp];
                 return (int)i;
             }
         }else{
@@ -1219,10 +1272,13 @@ fn long? String.get_width_or_precision(self, char* ch, usz* sp, any[] args, usz*
         }
         //num = libc::strtol((char*)(chunk.zstr_view()), &endptr, 0);
     }else{ // did not start with BEGIN //
-        //*ch = self[++(*sp)];
+        //(*sp)++;
+        //*ch = self[*sp];
         while(*sp < len && *ch != '.' && ascii::is_digit(*ch)){
             chunk.append(*ch);
-            *ch = self[++(*sp)];
+            (*sp)++;
+            if(*sp >= len) break;
+            *ch = self[*sp];
         }
         //if(chunk.len) return 0;
         ZString chnk = chunk.zstr_view();
@@ -1366,6 +1422,7 @@ fn bool String.is_date_time_spec(self, char ch, usz sp) @private {
 } /* fn bool String.is_date_time_spec(self, char ch, usz sp) */
 
 macro FmtAlignment char.alignment_value(self) @private {
+    dbg::eprintfn("%s[%d]«%s» self == `%c'", $$FILE, $$LINE, $$FUNC, self);
     switch(self){
         case '<': // left align //
             return FmtAlignment.LEFT;

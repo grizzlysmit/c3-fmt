@@ -22,7 +22,7 @@ fn void main(String[] args){
     long   prec  = 29;
     ArgHash named = arg::@make_map(*("pi" * any_make(&pi, $typeof(pi))), *("euler" * any_make(&e, $typeof(e))),
                                     *("width" * any_make(&width, $typeof(width))), *("prec" * any_make(&prec, $typeof(prec))));
-    String? s = fmt::format("pi == {:@^+#030.59La}\n e == {euler:*>+#0{width}.{prec}LF}\n name == {2:@^{3}.{4}}\n pi == {pi:*>+#0.{prec}E}\n pi == {pi:@^+#{width}.{prec}g}", pi, e, "fred", 30, 63, &named);
+    String? s = fmt::format("pi == {0:@^+#30.59La}\n e == {euler:*>+#0{width}.{prec}LF}\n name == {2:@^{3}.{4}}\n pi == {pi:*>+#0.{prec}E}\n pi == {pi:@^+#{width}.{prec}g}", pi, e, "fred", 30, 63, &named);
     if(catch excuse = s){
         io::eprintfn("Error: could not format string: %s", excuse);
         libc::exit(-1);
