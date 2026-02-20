@@ -108,7 +108,6 @@ struct Fmter
 		uint     prec;
         char     fill;
         char     conversion;
-        String   datetimespec;
 		fault    first_fault;
 	}
 }
@@ -593,20 +592,26 @@ fn usz? Fmter.vsprintf(&self, String format, any[] anys, ArgHash named){
                         self.prec = (uint)p;
                     }
                 }
+                DString datetimespec;
                 if(c == ':'){
                     i++;
                     if(i >= format_len) return @report_fault(self, "%ERR");
                     c = format[i]; // jump over ':' //
-                    DString ds;
                     while(c != END && i < format_len){
-                        ds.append_char(c);
+                        datetimespec.append_char(c);
                         i++;
                         if(i >= format_len) return @report_fault(self, "%ERR");
                         c = format[i];
                     }
-                    self.datetimespec = ds.str_view();
+                }else{
+                    while(c != END && i < format_len){
+                        datetimespec.append_char(c);
+                        i++;
+                        if(i >= format_len) return @report_fault(self, "%ERR");
+                        c = format[i];
+                    }
                 }
-                usz size = 512; 
+                usz size = 4096; 
                 char* dest = allocator::malloc(mem, size);
                 defer allocator::free(mem, dest);
                 libc::Tm tm;
@@ -617,11 +622,9 @@ fn usz? Fmter.vsprintf(&self, String format, any[] anys, ArgHash named){
                 }else if(arg.type == libc::TimeSpec.typeid){ // TimeSpec contains a Time_t //
                     tm = *libc::localtime(&(*((libc::TimeSpec*)arg.ptr)).s);
                 }
-                /*
-                dbg::eprintfn("%s[%d]«%s» self.datetimespec == `%s'",
-                                        $$FILE, $$LINE, $$FUNC, self.datetimespec);
-                // */
-                usz r = libc::strftime(dest, size, self.datetimespec.zstr_tcopy(), &tm);
+                dbg::eprintfn("%s[%d]«%s» datetimespec == `%s'",
+                                        $$FILE, $$LINE, $$FUNC, datetimespec);
+                usz r = libc::strftime(dest, size, datetimespec.zstr_view(), &tm);
                 if(self.fill == 0) self.fill = ' ';
                 String res = (String)dest[:r];
                 if(self.flags.precision){

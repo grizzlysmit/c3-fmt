@@ -29,6 +29,14 @@
     "t4": {
       "type": "executable",
       "sources":  [ "examples/t4.c3" ]
+    },
+    "t5": {
+      "type": "executable",
+      "sources":  [ "examples/t5.c3" ]
+    },
+    "t6": {
+      "type": "executable",
+      "sources":  [ "examples/t6.c3" ]
     }
   },
   "cpu": "generic",

@@ -229,6 +229,13 @@ fn usz? Fmter.gtoa(&self, double y) => self.floatformat(ADAPTIVE, y);
 fn usz? Fmter.atoa(&self, double y) => self.floatformat(HEX, y);
 
 fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private {
+	if(formatting == ADAPTIVE){
+        if(1E-4 <= y && y <= 1E4){
+            formatting = FLOAT;
+        }else{
+			formatting = EXPONENTIAL;
+        }
+	}
     if(!self.fill) self.fill = ' ';
 	// This code is heavily based on musl's printf code
 	const BUF_SIZE = (math::DOUBLE_MANT_DIG + 28) / 29 + 1
@@ -568,7 +575,6 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 	// Perform rounding: j is precision after the radix (possibly neg)
 	int j = (int)p;
 	if(formatting != FLOAT) j -= e;
-	if(formatting == ADAPTIVE && p != 0) j -= 1;
 
 	if(j < 9 * (z - r - 1)){
 		uint x;
@@ -614,30 +620,6 @@ fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private 
 	}
 	for(; z > a && !z[-1]; z--);
 
-	if(formatting == ADAPTIVE){
-		if(!p) p++;
-		if(p > e && e >= -4){
-			formatting = FLOAT;
-			p -= (isz)e + 1;
-		}else{
-			formatting = EXPONENTIAL;
-			p--;
-		}
-		if(!self.flags.alternate){
-			// Count trailing zeros in last place
-			if(z > a && z[-1]){
-				for (uint i = 10, j = 0; z[-1] % i == 0; i *= 10, j++);
-			}else{
-				j = 9;
-			}
-			if(formatting == FLOAT){
-				p = math::min(p, math::max((isz)0, 9 * (z - r - 1) - j));
-			}else{
-				p = math::min(p, math::max((isz)0, 9 * (z - r - 1) + e - j));
-
-			}
-		}
-	}
 	if(p > int.max - 1 - (isz)(p || self.flags.alternate)) return INTERNAL_BUFFER_EXCEEDED~;
 	int l = (int)(1 + p + (isz)(p || self.flags.alternate));
 	char* estr @noinit;
@@ -1315,15 +1297,11 @@ fn long? String.get_width_or_precision(self, char* ch, usz* sp, any[] args, usz*
                                          ArgHash named, bool getting_width = false, bool chrono = false) */
 
 fn bool String.is_date_time_spec(self, char ch, usz sp) @private {
-    //*
     dbg::eprintfn("%s[%d]«%s» self == `%s'\n ch == `%c'\n sp == %d",
                                         $$FILE, $$LINE, $$FUNC, self, ch, sp);
-    // */
     long self_len              = self.len;
-    //*
     dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
-                                        $$FILE, $$LINE, $$FUNC, self_len, ch);
-    // */
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
     if(sp >= self_len) return false;
     const char     BEGIN       = '{'; // using these as is mess up my editors //
     const char     END         = '}'; // bracket matching so I tokenise these //
@@ -1344,6 +1322,8 @@ fn bool String.is_date_time_spec(self, char ch, usz sp) @private {
             if(sp >= self_len) return false;
         }
     }
+    dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
     if(ch == '.'){ // no width just precision maybe //
         ch = self[sp++];
         if(sp >= self_len) return false;
@@ -1354,14 +1334,22 @@ fn bool String.is_date_time_spec(self, char ch, usz sp) @private {
                 ch = self[sp++];
                 if(ch == BEGIN) return false; // no deep nesting //
             }
+            dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
             if(sp >= self_len) return false;
+            dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
         }else{
             ch = self[sp++];
             if(sp >= self_len) return false;
             while(ascii::is_digit(ch) && sp < self_len){
                 ch = self[sp++];
             }
+            dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
             if(sp >= self_len) return false;
+            dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
         }
     }else{ // width and precision maybe //
         if(ch == BEGIN && sp < self_len){
@@ -1371,7 +1359,11 @@ fn bool String.is_date_time_spec(self, char ch, usz sp) @private {
                 ch = self[sp++];
                 if(ch == BEGIN) return false; // no deep nesting //
             }
+            dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
             if(sp >= self_len) return false;
+            dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
         }else{
             ch = self[sp++];
             if(sp >= self_len) return false;
@@ -1379,7 +1371,11 @@ fn bool String.is_date_time_spec(self, char ch, usz sp) @private {
                 ch = self[sp++];
                 if(ch == BEGIN || ch == END) return false; // no BEGIN or END embedded //
             }
+            dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
             if(sp >= self_len) return false;
+            dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
         }
         if(ch == '%') return true;
         if(ch == '.'){ // precision //
@@ -1390,7 +1386,11 @@ fn bool String.is_date_time_spec(self, char ch, usz sp) @private {
                     ch = self[sp++];
                     if(ch == BEGIN) return false; // no deep nesting //
                 }
+                dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
                 if(sp >= self_len) return false;
+                dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
             }else{
                 ch = self[sp++];
                 if(sp >= self_len) return false;
@@ -1398,13 +1398,21 @@ fn bool String.is_date_time_spec(self, char ch, usz sp) @private {
                     ch = self[sp++];
                     if(ch == BEGIN || ch == END) return false; // no BEGIN or END embedded //
                 }
+                dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
                 if(sp >= self_len) return false;
+                dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
             }
         }
     }
+    dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
     if(ch == '%') return true;
     while(sp < self_len){
         ch = self[sp++];
+        dbg::eprintfn("%s[%d]«%s» self_len == `%d'\n ch == `%c'\n sp == %d",
+                                        $$FILE, $$LINE, $$FUNC, self_len, ch, sp);
         if(ch == '%') return true;
     }
     dbg::eprintfn("%s[%d]«%s» self[sp:self_len - sp] == `%s'\n ch == `%c'\n"
