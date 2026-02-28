@@ -494,7 +494,7 @@ fn bool any.is_array(self){
 
 
 fn bool any.is_string(self){
-    if(self.type.kindof == DISTINCT){
+    if(self.type.kindof == TypeKind.TYPEDEF){
         switch(self.type){
             case String:  return true;
             case ZString: return true;

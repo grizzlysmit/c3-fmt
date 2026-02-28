@@ -17,8 +17,7 @@ faultdef BAD_FORMAT, ERROR_SPEC_DIED_TOO_SOON_COULD_NOT_GET_PRECISION,
          ERROR_ARG_SPEC_MUST_BE_AN_IDENIFIER_OR_NUMBER, ERROR_WIDTH_AND_PRECISION_MUST_BE_A_NUMBER, 
          ERROR_ARG_SPEC_MUST_BE_A_NUMBER, ERROR_MISSING_OPENING_BRACE_IN_WIDTH_OR_PRECISION;
 
-fn usz? print_hex_chars(Fmter* f, char[] out, bool uppercase) @inline
-{
+fn usz? print_hex_chars(Fmter* f, char[] out, bool uppercase) @inline {
 	char past_10 = (uppercase ? 'A' : 'a') - 10;
 	usz len = 0;
 	foreach (c : out){
@@ -39,8 +38,7 @@ macro fault Fmter.first_err(&self, fault f)
 	return f;
 }
 
-fn usz? Fmter.adjust(&self, usz len) @local
-{
+fn usz? Fmter.adjust(&self, usz len) {
     if(!self.fill) self.fill = ' ';
     isz padding = self.width - len;
     if(self.flags.alignment == FmtAlignment.CENTRE){
@@ -59,8 +57,8 @@ fn uint128? int_from_any(any arg, bool *is_neg) @private {
 		case POINTER:
 			*is_neg = false;
 			return (uint128)(uptr)*(void**)arg.ptr;
-		case DISTINCT:
-		case CONST_ENUM:
+		case TypeKind.TYPEDEF:
+		case TypeKind.CONSTDEF:
 			return int_from_any(arg.as_inner(), is_neg);
 		default:
 			break;
@@ -111,7 +109,7 @@ fn FloatType? float_from_any(any arg) @private {
 	$if env::F128_SUPPORT:
 		if (arg.type == float128.typeid) return (FloatType)*((float128*)arg.ptr);
 	$endif
-	if(arg.type.kindof == DISTINCT || arg.type.kindof == CONST_ENUM){
+	if(arg.type.kindof == TypeKind.TYPEDEF || arg.type.kindof == TypeKind.CONSTDEF){
 		return float_from_any(arg.as_inner());
 	}
 	switch(arg.type){
@@ -174,7 +172,7 @@ fn uint simple_atoi(char* buf, usz maxlen, usz* len_ptr) @inline @private {
 	return i;
 } // fn uint simple_atoi(char* buf, usz maxlen, usz* len_ptr) @inline @private //
 
-fn usz? Fmter.out_substr(&self, String str) @private {
+fn usz? Fmter.out_substr(&self, String str) {
 	usz l = conv::utf8_codepoints(str);
 	uint prec = self.prec;
 	if (self.flags.precision && l < prec) l = prec;
@@ -228,7 +226,7 @@ fn usz? Fmter.ftoa(&self, double y) => self.floatformat(FLOAT, y);
 fn usz? Fmter.gtoa(&self, double y) => self.floatformat(ADAPTIVE, y);
 fn usz? Fmter.atoa(&self, double y) => self.floatformat(HEX, y);
 
-fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) @private {
+fn usz? Fmter.floatformat(&self, FloatFormatting formatting, double y) {
 	if(formatting == ADAPTIVE){
         if(1E-4 <= y && y <= 1E4){
             formatting = FLOAT;
@@ -747,7 +745,7 @@ const String DIGIT_PAIRS @private =
   "09192939495969798999";
 
 
-fn usz? Fmter.ntoa(&self, uint128 value, bool negative, uint base) @private {
+fn usz? Fmter.ntoa(&self, uint128 value, bool negative, uint base) {
 	char[FMT_NTOA_BUFFER_SIZE] buf @noinit;
 	usz len;
 
@@ -820,7 +818,7 @@ fn usz? Fmter.ntoa(&self, uint128 value, bool negative, uint base) @private {
 	return self.ntoa_format((String)buf[:FMT_NTOA_BUFFER_SIZE], len, negative, base);
 } // fn usz? Fmter.ntoa(&self, uint128 value, bool negative, uint base) @private //
 
-fn usz? Fmter.ntoa_format(&self, String buf, usz len, bool negative, uint base) @private {
+fn usz? Fmter.ntoa_format(&self, String buf, usz len, bool negative, uint base) {
 	// pad leading zeros
 	if(self.flags.alignment == FmtAlignment.RIGHT){
 		if(self.width && self.flags.padding == FmtPadding.ZEROS
@@ -944,16 +942,15 @@ fn usz? Fmter.ntoa_format(&self, String buf, usz len, bool negative, uint base) 
     }
 	if(len) self.out_reverse(buf[:len])!;
 	return len;
-} // fn usz? Fmter.ntoa_format(&self, String buf, usz len, bool negative, uint base) @private //
+} // fn usz? Fmter.ntoa_format(&self, String buf, usz len, bool negative, uint base) //
 
 
-fn usz? Fmter.ntoa_any(&self, any arg, uint base) @private
-{
+fn usz? Fmter.ntoa_any(&self, any arg, uint base) {
 	bool is_neg;
 	return self.ntoa(int_from_any(arg, &is_neg)!!, is_neg, base) @inline;
 }
 
-fn usz? Fmter.out_char(&self, any arg) @private {
+fn usz? Fmter.out_char(&self, any arg) {
     if(!self.fill) self.fill = ' ';
 	if (!arg.type.kindof.is_int())
 	{
@@ -1001,11 +998,10 @@ fn usz? Fmter.out_char(&self, any arg) @private {
         }
     }
 	return len;
-} // fn usz? Fmter.out_char(&self, any arg) @private //
+} // fn usz? Fmter.out_char(&self, any arg) //
 
 
-fn usz? Fmter.out_reverse(&self, char[] buf) @private
-{
+fn usz? Fmter.out_reverse(&self, char[] buf) {
 	usz n;
 	usz len = buf.len;
     isz padding = self.width - len;
@@ -1030,8 +1026,7 @@ fn usz? Fmter.out_reverse(&self, char[] buf) @private
 
 fn int? printf_parse_format_field(
 	any* args_ptr, usz args_len, usz* args_index_ptr,
-	char* format_ptr, usz format_len, usz* index_ptr) @inline @private
-{
+	char* format_ptr, usz format_len, usz* index_ptr) @inline {
 	char c = format_ptr[*index_ptr];
 	if (c.is_digit()) return simple_atoi(format_ptr, format_len, index_ptr);
 	if (c != '*') return 0;
@@ -1044,7 +1039,7 @@ fn int? printf_parse_format_field(
 	return intval ?? BAD_FORMAT~;
 }
 
-fn bool char.is_conversion_char(self) @private {
+fn bool char.is_conversion_char(self) {
     switch(self){                 //***********************************************************//
         case 'a': return true; // Hexadecimal floating type prepended with 0x and lowercase //
                                // digits, 'p' to indicate exponent.                         //
@@ -1082,7 +1077,7 @@ fn bool char.is_conversion_char(self) @private {
     return false;
 } // fn bool is_conversion_char(char c) //
 
-fn bool char.valid_chrono_char(self) @private {
+fn bool char.valid_chrono_char(self) {
     switch(self){
         case 'a':
         case 'A':
@@ -1133,7 +1128,7 @@ fn bool char.valid_chrono_char(self) @private {
 } // fn bool char.valid_chrono_char(self) //
 
 fn long? String.get_width_or_precision(self, char* ch, usz* sp, any[] args, usz* place, ArgHash named,
-                                    bool getting_width = false, bool chrono = false) @inline @private {
+                                    bool getting_width = false, bool chrono = false) @inline {
     usz len =  self.len;
     dbg::eprintfn("%s[%d]«%s» self[*sp:len - *sp] == `%s'\n *ch == `%c'\n"
                     " sp == %d\n len == `%d'\n getting_width == `%s'\n chrono == `%s'",
@@ -1296,7 +1291,7 @@ fn long? String.get_width_or_precision(self, char* ch, usz* sp, any[] args, usz*
 } /* fn long? String.get_width_or_precision(self, char* ch, usz* sp, any[] args, usz* place,
                                          ArgHash named, bool getting_width = false, bool chrono = false) */
 
-fn bool String.is_date_time_spec(self, char ch, usz sp) @private {
+fn bool String.is_date_time_spec(self, char ch, usz sp) {
     dbg::eprintfn("%s[%d]«%s» self == `%s'\n ch == `%c'\n sp == %d",
                                         $$FILE, $$LINE, $$FUNC, self, ch, sp);
     long self_len              = self.len;
@@ -1421,7 +1416,7 @@ fn bool String.is_date_time_spec(self, char ch, usz sp) @private {
     return false;
 } /* fn bool String.is_date_time_spec(self, char ch, usz sp) */
 
-macro FmtAlignment char.alignment_value(self) @private {
+macro FmtAlignment char.alignment_value(self) {
     dbg::eprintfn("%s[%d]«%s» self == `%c'", $$FILE, $$LINE, $$FUNC, self);
     switch(self){
         case '<': // left align //

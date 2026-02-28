@@ -93,8 +93,8 @@ macro usz? Fmter.printf(&self, String format, ...)
 	return self.vsprintf(format, args[..], named) @inline;
 }
 
-//                              Normal spec       DateTime            Range (Array, Vector or Slice) //
-const enum  FmtSpec : char { REGULARSPEC = 0x0, DATETIMESPEC = 0x1, RANGESPEC = 0x2, }
+//                          Normal spec       DateTime            Range (Array, Vector or Slice) //
+constdef  FmtSpec : char { REGULARSPEC = 0x0, DATETIMESPEC = 0x1, RANGESPEC = 0x2, }
 
 struct Fmter
 {
@@ -112,14 +112,14 @@ struct Fmter
 	}
 }
 
-//                                                 '<'            '^'          '>'          //
-const enum FmtAlignment : char { NOPADDING = 0x0, LEFT = 0x1, CENTRE = 0x2, RIGHT = 0x3    }
+//                                               '<'            '^'          '>'          //
+constdef FmtAlignment : char { NOPADDING = 0x0, LEFT = 0x1, CENTRE = 0x2, RIGHT = 0x3    }
 
 //                                '-'             '_'          '0'        //
-const enum FmtPadding   : char { NOSPACES = 0x0, SPACES = 0x1, ZEROS = 0x2 }
+constdef FmtPadding   : char { NOSPACES = 0x0, SPACES = 0x1, ZEROS = 0x2 }
 
 //                                '-'             '+'              ' '            //
-const enum FmtSign      : char { ONLY_NEGS = 0x0, BOTH = 0x1, SPACE_OR_MINUS = 0x2 }
+constdef FmtSign      : char { ONLY_NEGS = 0x0, BOTH = 0x1, SPACE_OR_MINUS = 0x2 }
 
 bitstruct FmtFlags : uint
 {
@@ -142,8 +142,7 @@ fn void Fmter.init(&self, OutputFn out_fn, void* data = null, bool* debug = &gde
 	*self = { .data = data, .out_fn = out_fn, .debug = debug};
 }
 
-fn usz? Fmter.out(&self, char c) @private
-{
+fn usz? Fmter.out(&self, char c) {
 	if (catch err = self.out_fn(self.data, c))
 	{
 		if (self.first_fault) return self.first_fault~;
@@ -186,14 +185,13 @@ fn usz? Fmter.print_with_function(&self, Fmtable arg)
 	return NOT_FOUND~;
 }
 
-fn usz? Fmter.out_unknown(&self, String category, any arg) @private
-{
+fn usz? Fmter.out_unknown(&self, String category, any arg) {
 	return self.out_substr("<") + self.out_substr(category) + self.out_substr(" type:")
                             + self.ntoa((iptr)arg.type, false, 16) + self.out_substr(", addr:")
                                             + self.ntoa((iptr)arg.ptr, false, 16) + self.out_substr(">");
 }
 
-fn usz? Fmter.out_str(&self, any arg) @private {
+fn usz? Fmter.out_str(&self, any arg) {
 	switch(arg.type.kindof){
 		case VOID:
 			return self.out_substr("void");
@@ -261,8 +259,8 @@ fn usz? Fmter.out_str(&self, any arg) @private {
 			}
 			self.width = 0;
 			return self.out_substr("0x")! + self.ntoa_any(arg, 16);
-		case CONST_ENUM:
-		case DISTINCT:
+		case TypeKind.CONSTDEF:
+		case TypeKind.TYPEDEF:
 			if (arg.type == String.typeid)
 			{
 				return self.out_substr(*(String*)arg);
@@ -387,8 +385,7 @@ fn usz? Fmter.out_str(&self, any arg) @private {
 
 
 
-fn void? out_null_fn(void* data @unused, char c @unused) @private
-{
+fn void? out_null_fn(void* data @unused, char c @unused) {
 }
 
 macro usz? @report_fault(Fmter* f, $fault)
@@ -1180,6 +1177,18 @@ fn void? out_string_append_fn(void* data, char c) @private
 
 bool gdebug = false;
 
+fn void ArgHash.append(&self, ArgHash* other_map) {
+    if (!other_map.count) return;
+	foreach (ArgMapEntry *e : other_map.table)
+	{
+		while (e)
+		{
+			self.set(e.key, e.value);
+			e = e.next;
+		}
+	}
+}
+
 macro String? format(String fmt_str, ...){
     DString ds;
     Fmter f;
@@ -1194,9 +1203,9 @@ macro String? format(String fmt_str, ...){
             $case NameArgPair:
                 named.set($vaarg[$i].name, $vaarg[$i].arg);
             $case ArgHash*:
-                named.put_all_for_create($vaarg[$i]);
+                named.append($vaarg[$i]);
             $case ArgHash:
-                named.put_all_for_create(&$vaarg[$i]);
+                named.append(&$vaarg[$i]);
             $default:
                 args[$i] = any_make(&$vaarg[$i], $typeof($vaarg[$i]));
         $endswitch
